@@ -1,5 +1,5 @@
 <template>
-<div class="node-item" :class="nodeType" ref="node" :style="flowNodeContainer" @mouseenter="showDelete" @mouseleave="hideDelete" @mouseup="changeNodeSite" @dblclick="editNode">
+<div class="node-item" :class="nodeType" ref="node" :style="flowNodeContainer" @mouseenter="showDelete" @mouseup="changeNodeSite" @dblclick="editNode">
   <!-- <div class="node-titel">
             <div class="node-icon" v-show="mouseEnter">
                 <i class="el-icon-delete" @@click.stop="deleteNode"></i>
@@ -41,11 +41,12 @@ export default {
         }
       }
     },
-    nodeType:{
+    nodeType: {
       /* if(this.node.nodeType == 'is-start'){
         return 'is-start'
       } */
       get() {
+        // console.log('aaaaaaaa',this.node.nodeType);
         return this.node.nodeType
       }
     }
@@ -71,6 +72,7 @@ export default {
   methods: {
     // 删除节点
     deleteNode() {
+      console.log('aaa',this.node.id);
       this.$emit('delete-node', this.node.id)
     },
     // 编辑节点
@@ -79,7 +81,7 @@ export default {
     },
     // 鼠标进入
     showDelete() {
-      // this.mouseEnter = true
+      this.mouseEnter = true
     },
     // 鼠标离开
     hideDelete() {
@@ -110,7 +112,7 @@ export default {
 .node-item {
   cursor: pointer;
   line-height: normal;
-    border: 1px solid #6c62bc;
+  border: 1px solid #6c62bc;
 
 }
 
@@ -195,6 +197,7 @@ export default {
   align-items: center;
   justify-content: center;
   margin: 20px 0;
+
   span {
     display: block;
     transform: rotate(-45deg);

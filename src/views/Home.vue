@@ -21,7 +21,7 @@
       <!-- <flowNode class="aaaaa"></flowNode> -->
       <div class="flow-detail">
         <div id="flowContent" ref="flowContent" @drop="drop($event)" @dragover="allowDrop($event)" @click="editFlow()" @dblclick="isConnect=false">
-          <flowNode v-for="node in data.nodeList" :key="node.id" :style="flowNodeContainer" :node="node" :id="node.id" class="node-item" :isconnect="isConnect" @delete-node="deleteNode" @change-node-site="changeNodeSite" @edit-node="editNode">
+          <flowNode v-for="node in data.nodeList" :key="node.id" :node="node" :id="node.id" :isconnect="isConnect" @delete-node="deleteNode" @change-node-site="changeNodeSite" @edit-node="editNode">
           </flowNode>
         </div>
       </div>
@@ -33,7 +33,11 @@
     </el-col>
 
   </el-row>
-  <nodeEdit :componentNode="editNodeData"></nodeEdit>
+  <div>
+    <nodeEdit :componentNode="editNodeData"></nodeEdit>
+    <!-- <lineEdit></lineEdit> -->
+    <lineEdit ref="lineForm" :compoentLine="lineData" v-show="editType=='line'" @line-save="lineLabelSave"></lineEdit>
+  </div>
 
 </div>
 </template>
@@ -48,13 +52,16 @@ import {
 } from './data'
 import flowNode from './flowNode'
 import nodeEdit from './nodeEdit'
+import lineEdit from './lineEdit'
 export default {
   components: {
     flowNode,
-    nodeEdit
+    nodeEdit,
+    lineEdit
   },
   data() {
     return {
+      lineData: null,
       menueList: [{
           type: 1,
           name: '开始',
@@ -94,7 +101,7 @@ export default {
         //这个是鼠标拉出来的线的属性
         ConnectionOverlays: [
           ["Label", {
-            label: "连线文本",
+            label: "",
             id: "label-1",
             cssClass: "csslabel"
           }]
@@ -180,31 +187,110 @@ export default {
     this.$nextTick(() => {
       this.init();
     });
-    // this.editFlow()
+    this.editFlow()
   },
   methods: {
     init() {
-      this.jsPlumb.ready(() => {
+      const _this = this
+      this.jsPlumb.ready(function () {
+
         // 导入默认配置
-        this.jsPlumb.importDefaults(this.jsplumbSetting)
+        _this.jsPlumb.importDefaults(_this.jsplumbSetting)
         // 会使整个jsPlumb立即重绘。
-        this.jsPlumb.setSuspendDrawing(false, true);
+        _this.jsPlumb.setSuspendDrawing(false, true);
         // 初始化节点
-        this.loadEasyFlow()
+        _this.loadEasyFlow()
+
         // 单点连接线（编辑label）,
-        this.jsPlumb.bind('dblclick', function (conn, originalEvent) {
-          //clearTimeout(this.timer);
-          //this.timer = setTimeout(function () { // 这里采用执行自定义事件的方式
-          //    console.log("click", conn);
-          //    _this.editLine(conn);
-          //}, 300); // 延迟300ms执行单击事件,区分双击事件
-          console.log("click", conn);
+        _this.jsPlumb.bind('dblclick', function (conn, originalEvent) {
           console.log(originalEvent);
-          this.editLine(conn);
-          console.log(conn.getOverlay("label-1"));
-          //conn.getOverlay("label-1").setLabel('大肥肚'); //初始化label
+          clearTimeout(this.timer);
+          this.timer = setTimeout(function () { // 这里采用执行自定义事件的方式
+            console.log("click", conn);
+            _this.editLine(conn);
+          }, 300); // 延迟300ms执行单击事件,区分双击事件
+          console.log("click", conn);
+          _this.editLine(conn);
+          // console.log(conn.getOverlay("label-1"));
+        })
+        // 双击连接线（删除）,
+        _this.jsPlumb.bind('click', function (conn, originalEvent) {
+          console.log(originalEvent);
+          clearTimeout(this.timer);
+          console.log("dblclick", conn)
+          console.log("dblclick", conn)
+
+          _this.$confirm('确定删除所点击的线吗?', '提示', {
+              confirmButtonText: '确定',
+              cancelButtonText: '取消',
+              type: 'warning'
+          }).then(() => {
+              _this.jsPlumb.deleteConnection(conn)
+          }).catch(() => { })
+          // this.$message.success("上个节点为" + conn.sourceId + ",下个节点为" + conn.targetId)
+        })
+        // 连线
+        _this.jsPlumb.bind("connection", function (evt) {
+          console.log('connection', evt)
+          let from = evt.source.id
+          let to = evt.target.id
+          if (_this.loadEasyFlowFinish) {
+            _this.data.lineList.push({
+              from: from,
+              to: to,
+              label: '',
+              id: _this.getUUID(),
+              Remark: ''
+            })
+          }
+          setTimeout(function () {
+            _this.editLine(evt.connection);
+          }, 100);
+        })
+
+        // 删除连线
+        _this.jsPlumb.bind("connectionDetached", function (evt) {
+          console.log('connectionDetached', evt)
+          _this.deleteLine(evt.sourceId, evt.targetId)
+        })
+
+        // 改变线的连接节点
+        _this.jsPlumb.bind("connectionMoved", function (evt) {
+          console.log('connectionMoved', evt)
+          _this.changeLine(evt.originalSourceId, evt.originalTargetId)
+        })
+
+        // contextmenu 右键
+        _this.jsPlumb.bind("contextmenu", function (evt) {
+          console.log('contextmenu', evt)
+        })
+
+        // beforeDrop
+        _this.jsPlumb.bind("beforeDrop", function (evt) {
+          console.log('beforeDrop', evt)
+          let from = evt.sourceId
+          let to = evt.targetId
+          if (from === to) {
+            _this.$message.error('不能连接自己');
+            return false
+          }
+          if (_this.hasLine(from, to)) {
+            _this.$message.error('不能重复连线');
+            return false
+          }
+          if (_this.hashOppositeLine(from, to)) {
+            _this.$message.error('不能回环哦');
+            return false
+          }
+          return true
+        })
+
+        // beforeDetach
+        _this.jsPlumb.bind("beforeDetach", function (evt) {
+          console.log('beforeDetach', evt)
         })
       })
+
     },
     // 加载流程图
     loadEasyFlow() {
@@ -260,29 +346,91 @@ export default {
         nodeType: this.currentItem.nodeType
       }
       this.addNode(temp);
-      // this.editNode(temp.id);
+      this.editNode(temp.id);
     },
     allowDrop(event) {
       event.preventDefault()
     },
-    deleteNode() {
-
+    //获取checkbox选中值开票
+    changeFunOpen(val) {
+      this.fromAdd.userList = []
+      for (var i in val) {
+        this.fromAdd.userList.push(val[i].userId)
+      }
+      console.log("333", this.fromAdd.userList)
     },
-    changeNodeSite() {
+    deleteNode(nodeId) {
+      // console.log('nodeId',nodeId);
+      this.$confirm('确定要删除节点' + nodeId + '?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+        closeOnClickModal: false
+      }).then(() => {
+        // this.data.nodeList = this.data.nodeList.filter(function(node) {
+        // 	if (node.id === nodeId) {
+        // 		node.show = false
+        // 	}
+        // 	return true
+        // })
+        this.data.nodeList.forEach((item, index) => {
+          if (item.id === nodeId) {
+            this.data.nodeList.splice(index, 1);
+          }
+        })
 
+        this.$nextTick(function () {
+          console.log('删除' + nodeId)
+          this.jsPlumb.removeAllEndpoints(nodeId);
+        })
+      }).catch(() => {})
+      return true
     },
+    // 改变节点的位置
+    changeNodeSite(data) {
+      for (var i = 0; i < this.data.nodeList.length; i++) {
+        let node = this.data.nodeList[i]
+        if (node.id === data.nodeId) {
+          node.left = data.left
+          node.top = data.top
+        }
+      }
+    },
+    //编辑节点
     editNode(nodeId) {
       console.log('编辑节点', nodeId)
       this.editType = 'node';
-      /* this.$nextTick(function () {
+      /* this.editType = 'node';
+      this.$nextTick(function () {
         this.$refs.nodeForm.init(this.data, nodeId)
       }) */
-      console.log('bbb', this.data);
       let obj = {
         nodeId: nodeId
       }
       this.editNodeData = Object.assign({}, obj, this.data)
       console.log(this.editNodeData);
+    },
+    editLine(conn) {
+      console.log('conn', conn);
+      var _this = this;
+      let obj = {};
+      _this.currentConnect = conn;
+      _this.data.lineList.forEach(function (item) {
+        if (item.from == conn.sourceId && item.to == conn.targetId) {
+          _this.currentLine = item;
+          _this.editType = 'line';
+          console.log('aa', _this.currentLine);
+          obj = _this.currentLine;
+          // this.lineData = Object.assign({}, _this.currentConnect)
+          /* _this.$nextTick(function () {
+            _this.$refs.lineForm.init(item)
+          }) */
+        }
+        return
+      });
+      console.log('arr', obj);
+      this.lineData = Object.assign({}, obj)
+
     },
     // 添加新的节点
     addNode(temp) {
@@ -310,10 +458,19 @@ export default {
       return uuid;
     },
     editFlow() {
+      // debugger
+      console.log('aa');
+      this.editType = 'flow';
       /* this.editType = 'flow';
       this.$nextTick(function () {
         this.$refs.flowEdit.init(this.data.flowInfo);
       }) */
+      // console.log(nodeId);
+
+    },
+    lineLabelSave(line) {
+      this.currentConnect.getOverlay("label-1").setLabel(line.label);
+      this.$set(this.currentLine, 'label', line.label);
     },
     saveData() {
       console.log(this.data.nodeList);
@@ -348,7 +505,7 @@ export default {
   width: 100%;
 }
 
-.flow-menu{
+.flow-menu {
   text-align: center;
   height: 100vh;
   border-right: 1px solid #ccc;
