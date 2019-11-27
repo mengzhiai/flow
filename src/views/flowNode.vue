@@ -48,21 +48,23 @@ export default {
       get() {
         // console.log('aaaaaaaa',this.node.nodeType);
         return this.node.nodeType
+      },
+      set(){
+        return this.node.nodeType 
       }
     }
   },
   created() {
-    console.log(this.node);
-    if (this.node.type == "1") {
+    if (this.node.type == "-1") {
       this.nodeType = "is-start"
     }
-    if (this.node.type == "2") {
+    if (this.node.type == "1") {
       this.nodeType = "is-end"
     }
     if (this.node.type == "3") {
       this.nodeType = "is-rhombus"
     }
-    if (this.node.type == "4") {
+    if (this.node.type == "2") {
       this.nodeType = "is-state"
     }
   },
@@ -89,6 +91,7 @@ export default {
     },
     // 鼠标移动后抬起
     changeNodeSite() {
+      console.log(this.$refs.node.style.top,this.$refs.node.style.left);
       this.$emit('changeNodeSite', {
         nodeId: this.node.id,
         left: this.$refs.node.style.left,

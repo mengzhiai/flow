@@ -8,11 +8,11 @@
           <div>{{item.name}}</div>
         </div>
         <div class="menu-item" @click="isConnect=true">
-          <i class="el-icon-bottom-right"></i>
+          <i class="iconfont el-icon-bottom-right"></i>
           <div>连线</div>
         </div>
         <div class="menu-item" @click="isConnect=false">
-          <i class="el-icon-rank"></i>
+          <i class="iconfont el-icon-rank"></i>
           <div>选择</div>
         </div>
       </div>
@@ -21,7 +21,7 @@
       <!-- <flowNode class="aaaaa"></flowNode> -->
       <div class="flow-detail">
         <div id="flowContent" ref="flowContent" @drop="drop($event)" @dragover="allowDrop($event)" @click="editFlow()" @dblclick="isConnect=false">
-          <flowNode v-for="node in data.nodeList" :key="node.id" :node="node" :id="node.id" :isconnect="isConnect" @delete-node="deleteNode" @change-node-site="changeNodeSite" @edit-node="editNode">
+          <flowNode v-for="node in data.nodeList" :key="node.id" :node="node" :id="node.id" :isconnect="isConnect" @delete-node="deleteNode" @changeNodeSite="changeNodeSiteData" @edit-node="editNode">
           </flowNode>
         </div>
       </div>
@@ -61,6 +61,7 @@ export default {
   },
   data() {
     return {
+      num: 1,
       lineData: null,
       menueList: [{
           type: 1,
@@ -165,7 +166,7 @@ export default {
         flowInfo: {
           Id: this.getUUID(),
           Name: '我的流程',
-          Remark: '',
+          Remark: '111',
         },
         nodeList: nodeList,
         lineList: lineList
@@ -202,19 +203,17 @@ export default {
         _this.loadEasyFlow()
 
         // 单点连接线（编辑label）,
-        _this.jsPlumb.bind('dblclick', function (conn, originalEvent) {
+        _this.jsPlumb.bind('click', function (conn, originalEvent) {
           console.log(originalEvent);
           clearTimeout(this.timer);
           this.timer = setTimeout(function () { // 这里采用执行自定义事件的方式
             console.log("click", conn);
             _this.editLine(conn);
-          }, 300); // 延迟300ms执行单击事件,区分双击事件
+          }, 200); // 延迟300ms执行单击事件,区分双击事件
           console.log("click", conn);
-          _this.editLine(conn);
-          // console.log(conn.getOverlay("label-1"));
         })
         // 双击连接线（删除）,
-        _this.jsPlumb.bind('click', function (conn, originalEvent) {
+        _this.jsPlumb.bind('dblclick', function (conn, originalEvent) {
           console.log(originalEvent);
           clearTimeout(this.timer);
           console.log("dblclick", conn)
@@ -238,7 +237,7 @@ export default {
             _this.data.lineList.push({
               from: from,
               to: to,
-              label: '',
+              label: '连线名称',
               id: _this.getUUID(),
               Remark: ''
             })
@@ -331,7 +330,7 @@ export default {
       })
     },
     drag(item) {
-      console.log(item);
+      console.log('item',item);
       this.currentItem = item;
     },
     drop() {
@@ -342,11 +341,11 @@ export default {
         label: this.currentItem.name,
         top: event.offsetY + 'px',
         left: event.offsetX + 'px',
-        Type: this.currentItem.type,
+        type: this.currentItem.type,
         nodeType: this.currentItem.nodeType
       }
       this.addNode(temp);
-      this.editNode(temp.id);
+      // this.editNode(temp.id);
     },
     allowDrop(event) {
       event.preventDefault()
@@ -387,7 +386,8 @@ export default {
       return true
     },
     // 改变节点的位置
-    changeNodeSite(data) {
+    changeNodeSiteData(data) {
+      console.log('changeData',data);
       for (var i = 0; i < this.data.nodeList.length; i++) {
         let node = this.data.nodeList[i]
         if (node.id === data.nodeId) {
@@ -400,10 +400,6 @@ export default {
     editNode(nodeId) {
       console.log('编辑节点', nodeId)
       this.editType = 'node';
-      /* this.editType = 'node';
-      this.$nextTick(function () {
-        this.$refs.nodeForm.init(this.data, nodeId)
-      }) */
       let obj = {
         nodeId: nodeId
       }
@@ -471,6 +467,7 @@ export default {
     lineLabelSave(line) {
       this.currentConnect.getOverlay("label-1").setLabel(line.label);
       this.$set(this.currentLine, 'label', line.label);
+      // console.log(this.data.lineList);
     },
     saveData() {
       console.log(this.data.nodeList);
@@ -509,5 +506,9 @@ export default {
   text-align: center;
   height: 100vh;
   border-right: 1px solid #ccc;
+}
+.iconfont{
+  font-size: 40px;
+  cursor: pointer;
 }
 </style>
