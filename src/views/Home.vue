@@ -168,7 +168,7 @@ export default {
           Name: '我的流程',
           Remark: '111',
         },
-        nodeList: nodeList,
+        nodeList: [],
         lineList: lineList
       },
       currentItem: '', //临时存添加的元素
@@ -183,6 +183,9 @@ export default {
       editNodeData: {}
     }
   },
+  created() {
+    this.getData()
+  },
   mounted() {
     this.jsPlumb = jsPlumb.getInstance();
     this.$nextTick(() => {
@@ -191,6 +194,23 @@ export default {
     this.editFlow()
   },
   methods: {
+    getData() {
+      let data = {
+        processId: "2d88af58-77fb-4fb9-9103-87c434d838b1"
+      }
+      this.axios.post("/api/sysFlow/getNodeListByQuery.do", data, {
+        headers:{
+          jtoken:'eyJhbGciOiJIUzUxMiJ9.eyJDcmVhdGVkVGltZSI6MTU3NDkzMTM2MjIxMywibmlrZU5hbWUiOiLotoXnuqfnrqHnkIblkZgiLCJleHAiOjE1NzQ5MzMxNjIsInVzZXJJZCI6InN1cGVyLWFkbWluIn0.0RPS3cQXvEJ7ilRBsWVa_OayqqAzFfyRqe9ls_EkjeIz7um_QjlQ9cEHRQq5OPIAAxi7e_4mDL7PrdeI_0Y16Q'
+        }
+      }).then(res => {
+        let arr = res.data.data;
+        arr.forEach(item=>{
+          item.id = item.kid;
+          item.label = item.name;
+        })
+        this.data.nodeList = arr;
+      })
+    },
     init() {
       const _this = this
       this.jsPlumb.ready(function () {
@@ -220,12 +240,12 @@ export default {
           console.log("dblclick", conn)
 
           _this.$confirm('确定删除所点击的线吗?', '提示', {
-              confirmButtonText: '确定',
-              cancelButtonText: '取消',
-              type: 'warning'
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
           }).then(() => {
-              _this.jsPlumb.deleteConnection(conn)
-          }).catch(() => { })
+            _this.jsPlumb.deleteConnection(conn)
+          }).catch(() => {})
           // this.$message.success("上个节点为" + conn.sourceId + ",下个节点为" + conn.targetId)
         })
         // 连线
@@ -330,7 +350,7 @@ export default {
       })
     },
     drag(item) {
-      console.log('item',item);
+      console.log('item', item);
       this.currentItem = item;
     },
     drop() {
@@ -387,7 +407,7 @@ export default {
     },
     // 改变节点的位置
     changeNodeSiteData(data) {
-      console.log('changeData',data);
+      console.log('changeData', data);
       for (var i = 0; i < this.data.nodeList.length; i++) {
         let node = this.data.nodeList[i]
         if (node.id === data.nodeId) {
@@ -465,8 +485,8 @@ export default {
 
     },
     lineLabelSave(line) {
-      this.currentConnect.getOverlay("label-1").setLabel(line.label);
-      this.$set(this.currentLine, 'label', line.label);
+      // this.currentConnect.getOverlay("label-1").setLabel(line.label);
+      this.$set(this.currentLine, 'label-1', line.label);
       // console.log(this.data.lineList);
     },
     saveData() {
@@ -507,7 +527,8 @@ export default {
   height: 100vh;
   border-right: 1px solid #ccc;
 }
-.iconfont{
+
+.iconfont {
   font-size: 40px;
   cursor: pointer;
 }

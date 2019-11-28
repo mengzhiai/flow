@@ -1,5 +1,5 @@
 <template>
-<div class="node-item" :class="nodeType" ref="node" :style="flowNodeContainer" @mouseenter="showDelete" @mouseup="changeNodeSite" @dblclick="editNode">
+<div class="node-item jtk-droppable jtk-managed jtk-draggable" :class="nodeType" ref="node" :style="flowNodeContainer" @mouseenter="showDelete" @mouseup="changeNodeSite" @dblclick="editNode">
   <!-- <div class="node-titel">
             <div class="node-icon" v-show="mouseEnter">
                 <i class="el-icon-delete" @@click.stop="deleteNode"></i>
@@ -91,7 +91,7 @@ export default {
     },
     // 鼠标移动后抬起
     changeNodeSite() {
-      console.log(this.$refs.node.style.top,this.$refs.node.style.left);
+      console.log('nodechange',this.$refs.node.style.top,this.$refs.node.style.left);
       this.$emit('changeNodeSite', {
         nodeId: this.node.id,
         left: this.$refs.node.style.left,
@@ -162,18 +162,21 @@ export default {
 
 //开始
 .is-start {
-  width: 100px;
-  height: 50px;
+  // min-width: 100px;
+  max-width: 120px;
+  min-height: 50px;
+  padding: 5px;
   border-radius: 50% / 50%;
   display: flex;
   align-items: center;
+  text-align: center;
   justify-content: center;
 }
 
 //结束
 .is-end {
   width: 100px;
-  height: 60px;
+  min-height: 60px;
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -183,17 +186,18 @@ export default {
 //状态
 .is-state {
   width: 100px;
-  height: 80px;
+  min-height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
 }
 
 //菱形
 .is-rhombus {
   display: inline-block;
   width: 100px;
-  height: 100px;
+  min-height: 100px;
   // background-color: #c685d9;
   transform: rotate(45deg);
   display: flex;
