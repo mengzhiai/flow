@@ -200,13 +200,15 @@ export default {
       }
       this.axios.post("/api/sysFlow/getNodeListByQuery.do", data, {
         headers:{
-          jtoken:'eyJhbGciOiJIUzUxMiJ9.eyJDcmVhdGVkVGltZSI6MTU3NDkzMTM2MjIxMywibmlrZU5hbWUiOiLotoXnuqfnrqHnkIblkZgiLCJleHAiOjE1NzQ5MzMxNjIsInVzZXJJZCI6InN1cGVyLWFkbWluIn0.0RPS3cQXvEJ7ilRBsWVa_OayqqAzFfyRqe9ls_EkjeIz7um_QjlQ9cEHRQq5OPIAAxi7e_4mDL7PrdeI_0Y16Q'
+          jtoken:'eyJhbGciOiJIUzUxMiJ9.eyJDcmVhdGVkVGltZSI6MTU3NTAwNjcyNzI2NywibmlrZU5hbWUiOiLotoXnuqfnrqHnkIblkZgiLCJleHAiOjE1NzUwMDg1MjcsInVzZXJJZCI6InN1cGVyLWFkbWluIn0.gppTXJHCyKbjwYrQ1B9hw21Djc1pV8PvlISedba18WLutfDqu7J5SznmePngeV8DpvNG3E2uOzS34q7_MrVSTQ'
         }
       }).then(res => {
         let arr = res.data.data;
         arr.forEach(item=>{
           item.id = item.kid;
           item.label = item.name;
+          item.left = item.leftPosition;
+          item.top = item.topPosition;
         })
         this.data.nodeList = arr;
       })
@@ -407,6 +409,7 @@ export default {
     },
     // 改变节点的位置
     changeNodeSiteData(data) {
+      debugger
       console.log('changeData', data);
       for (var i = 0; i < this.data.nodeList.length; i++) {
         let node = this.data.nodeList[i]

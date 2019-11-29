@@ -1,7 +1,7 @@
 <!--
  * @Author: your name
  * @Date: 2019-11-21 17:05:21
- * @LastEditTime: 2019-11-27 13:20:50
+ * @LastEditTime: 2019-11-29 13:58:29
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: \drag\src\views\nodeEdit.vue
@@ -66,7 +66,7 @@ export default {
       data.nodeList.forEach(item=>{
         if(data.nodeId == item.id){
           obj= item;
-          console.log(this.nodeData);
+          console.log("nodeData",this.nodeData);
           this.nodeDialog = true;
         }
       })
