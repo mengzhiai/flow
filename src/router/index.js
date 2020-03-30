@@ -1,22 +1,22 @@
+/*
+ * @Author: your name
+ * @Date: 2019-11-21 08:56:39
+ * @LastEditTime: 2019-12-02 15:07:01
+ * @LastEditors: Please set LastEditors
+ * @Description: In User Settings Edit
+ * @FilePath: \drag\src\router\index.js
+ */
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import Home from '../views/Home.vue'
+import flowMain from '../views/flowMain.vue'
 
 Vue.use(VueRouter)
 
 const routes = [
   {
     path: '/',
-    name: 'home',
-    component: Home
-  },
-  {
-    path: '/about',
-    name: 'about',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/About.vue')
+    name: 'flowMain',
+    component: flowMain
   }
 ]
 

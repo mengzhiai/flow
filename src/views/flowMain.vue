@@ -1,42 +1,36 @@
 <template>
-<div>
-  <el-row>
-    <el-col :span="4">
-      <div class="flow-menu">
-        <div class="menu-item" v-for="(item,i) in menueList" :key="i" draggable="true" @dragstart="drag(item)">
-          <i class="iconfont" :class="item.icon"></i>
-          <div>{{item.name}}</div>
-        </div>
-        <div class="menu-item" @click="isConnect=true">
-          <i class="iconfont el-icon-bottom-right"></i>
-          <div>连线</div>
-        </div>
-        <div class="menu-item" @click="isConnect=false">
-          <i class="iconfont el-icon-rank"></i>
-          <div>选择</div>
-        </div>
-      </div>
-    </el-col>
-    <el-col :span="18">
-      <!-- <flowNode class="aaaaa"></flowNode> -->
-      <div class="flow-detail">
-        <div id="flowContent" ref="flowContent" @drop="drop($event)" @dragover="allowDrop($event)" @click="editFlow()" @dblclick="isConnect=false">
-          <flowNode v-for="node in data.nodeList" :key="node.id" :node="node" :id="node.id" :isconnect="isConnect" @delete-node="deleteNode" @changeNodeSite="changeNodeSiteData" @edit-node="editNode">
-          </flowNode>
-        </div>
-      </div>
-    </el-col>
-    <el-col :span="2">
-      <div class="savebtn">
-        <el-button type="primary" size="mini" @click="saveData()">保 存</el-button>
-      </div>
-    </el-col>
+<div class="appcontainer">
+  <div class="flow-menu">
+    <div class="menu-item" v-for="item in menueList" draggable="true" @dragstart="drag(item)">
+      <i :class="item.icon"></i>
+      <div>{{item.name}}</div>
+    </div>
+    <hr>
+    <div class="menu-item" @click="isConnect=true">
+      <i class="el-icon-bottom-right"></i>
+      <div>连线</div>
+    </div>
+    <div class="menu-item" @click="isConnect=false">
+      <i class="el-icon-rank"></i>
+      <div>选择</div>
+    </div>
 
-  </el-row>
-  <div>
-    <nodeEdit :componentNode="editNodeData"></nodeEdit>
-    <!-- <lineEdit></lineEdit> -->
-    <lineEdit ref="lineForm" :compoentLine="lineData" v-show="editType=='line'" @line-save="lineLabelSave"></lineEdit>
+  </div>
+  <div class="flow-detail">
+    <div id="flowContent" ref="flowContent" @drop="drop($event)" @dragover="allowDrop($event)" @click="editFlow()" @dblclick="isConnect=false">
+      <flowNode v-for="node in data.nodeList" :key="node.id" :node="node" :id="node.id" :isconnect="isConnect" @delete-node="deleteNode" @change-node-site="changeNodeSite" @edit-node="editNode">
+      </flowNode>
+    </div>
+    <div class="savebtn">
+      <el-button type="primary" size="mini" @click="saveData()">保 存</el-button>
+    </div>
+  </div>
+  <div class="flow-edit">
+    <div class="flow-edit-content">
+      <edit-flow ref="flowEdit" v-show="editType=='flow'"></edit-flow>
+      <edit-node ref="nodeForm" v-show="editType=='node'"></edit-node>
+      <edit-line ref="lineForm" v-show="editType=='line'" @line-save="lineLabelSave"></edit-line>
+    </div>
   </div>
 
 </div>
@@ -46,50 +40,37 @@
 import {
   jsPlumb
 } from 'jsplumb'
-import {
-  nodeList,
-  lineList
-} from './data'
-import flowNode from './flowNode'
-import nodeEdit from './nodeEdit'
-import lineEdit from './lineEdit'
+import flowNode from './flowNode.vue'
+import editFlow from './editFlow.vue'
+import editNode from './editNode.vue'
+import editLine from './editLine.vue'
 export default {
-  components: {
-    flowNode,
-    nodeEdit,
-    lineEdit
-  },
+  name: 'flowMain',
   data() {
     return {
-      num: 1,
-      lineData: null,
       menueList: [{
           type: 1,
-          name: '开始',
-          icon: 'icontuoyuan',
-          nodeType: 'is-start'
+          name: '起点',
+          icon: 'el-icon-help'
         },
         {
           type: 2,
-          name: '结束',
-          icon: 'icontuoyuan1copy',
-          nodeType: 'is-end'
+          name: '终点',
+          icon: 'el-icon-s-help'
         },
         {
           type: 3,
-          name: '逻辑判断',
-          icon: 'icontubiao',
-          nodeType: 'is-rhombus'
+          name: '人工活动',
+          icon: 'el-icon-user'
         },
         {
           type: 4,
-          name: '状态',
-          icon: 'iconchangfangxing',
-          nodeType: 'is-state'
+          name: '自动活动',
+          icon: 'el-icon-s-tools'
         },
       ],
-      droppedItem: '',
-      jsPlumb: null,
+      jsPlumb: null, // jsPlumb 实例
+      index: 1,
       // 默认设置参数
       jsplumbSetting: {
         // 动态锚点、位置自适应
@@ -98,11 +79,11 @@ export default {
         ],
         Container: 'flowContent',
         // 连线的样式 StateMachine、Flowchart,有四种默认类型：Bezier（贝塞尔曲线），Straight（直线），Flowchart（流程图），State machine（状态机）
-        Connector: 'Flowchart',
+        Connector: 'Straight',
         //这个是鼠标拉出来的线的属性
         ConnectionOverlays: [
           ["Label", {
-            label: "",
+            label: "连线文本",
             id: "label-1",
             cssClass: "csslabel"
           }]
@@ -166,22 +147,24 @@ export default {
         flowInfo: {
           Id: this.getUUID(),
           Name: '我的流程',
-          Remark: '111',
+          Remark: '',
         },
         nodeList: [],
-        lineList: lineList
+        lineList: []
       },
       currentItem: '', //临时存添加的元素
       isConnect: false, //判断是否连接
       timer: null, //定时器,判断单双击,
       currentConnect: '', //当前的连接线
       currentLine: '', //当前连接线数据
-      editType: '', //编辑的类型,
-      flowNodeContainer: {
-        position: 'absolute',
-      },
-      editNodeData: {}
+      editType: '', //编辑的类型
     }
+  },
+  components: {
+    flowNode,
+    editFlow,
+    editNode,
+    editLine
   },
   created() {
     this.getData()
@@ -195,23 +178,45 @@ export default {
   },
   methods: {
     getData() {
-      let data = {
-        processId: "2d88af58-77fb-4fb9-9103-87c434d838b1"
-      }
-      this.axios.post("/api/sysFlow/getNodeListByQuery.do", data, {
-        headers:{
-          jtoken:'eyJhbGciOiJIUzUxMiJ9.eyJDcmVhdGVkVGltZSI6MTU3NTAwNjcyNzI2NywibmlrZU5hbWUiOiLotoXnuqfnrqHnkIblkZgiLCJleHAiOjE1NzUwMDg1MjcsInVzZXJJZCI6InN1cGVyLWFkbWluIn0.gppTXJHCyKbjwYrQ1B9hw21Djc1pV8PvlISedba18WLutfDqu7J5SznmePngeV8DpvNG3E2uOzS34q7_MrVSTQ'
+      let nodeList = [{
+          id: "9b7efbb4-b7d9-4d9a-8fde-efd7ffb2e83b",
+          label: "起点",
+          top: "101px",
+          left: "237px",
+          Type: 1
+        },
+        {
+          id: "792ab28b-a863-480a-816b-93f20a52b78c",
+          label: "终点",
+          top: "323px",
+          left: "281px",
+          Type: 2
+        },
+        {
+          id: "cf72ff98-1c19-4e04-b00d-e898bf8d337d",
+          label: "自动活动",
+          top: "261px",
+          left: "528px",
+          Type: 4
         }
-      }).then(res => {
-        let arr = res.data.data;
-        arr.forEach(item=>{
-          item.id = item.kid;
-          item.label = item.name;
-          item.left = item.leftPosition;
-          item.top = item.topPosition;
-        })
-        this.data.nodeList = arr;
-      })
+      ];
+      let lineList = [{
+          from: "9b7efbb4-b7d9-4d9a-8fde-efd7ffb2e83b",
+          to: "792ab28b-a863-480a-816b-93f20a52b78c",
+          label: "连线名称",
+          id: "91a1c2c6-8088-43a5-9cf8-826dca8847a3",
+          Remark: ""
+        },
+        {
+          from: "9b7efbb4-b7d9-4d9a-8fde-efd7ffb2e83b",
+          to: "cf72ff98-1c19-4e04-b00d-e898bf8d337d",
+          label: "连线名称",
+          id: "51fc5633-3fbb-46ad-8981-83e5c5907231",
+          Remark: ""
+        }
+      ]
+      this.data.nodeList = nodeList;
+      this.data.lineList = lineList;
     },
     init() {
       const _this = this
@@ -226,19 +231,19 @@ export default {
 
         // 单点连接线（编辑label）,
         _this.jsPlumb.bind('click', function (conn, originalEvent) {
-          console.log(originalEvent);
-          clearTimeout(this.timer);
-          this.timer = setTimeout(function () { // 这里采用执行自定义事件的方式
-            console.log("click", conn);
-            _this.editLine(conn);
-          }, 200); // 延迟300ms执行单击事件,区分双击事件
+          //clearTimeout(this.timer);
+          //this.timer = setTimeout(function () { // 这里采用执行自定义事件的方式
+          //    console.log("click", conn);
+          //    _this.editLine(conn);
+          //}, 300); // 延迟300ms执行单击事件,区分双击事件
           console.log("click", conn);
+          _this.editLine(conn);
+          console.log(conn.getOverlay("label-1"));
+          //conn.getOverlay("label-1").setLabel('大肥肚'); //初始化label
         })
         // 双击连接线（删除）,
         _this.jsPlumb.bind('dblclick', function (conn, originalEvent) {
-          console.log(originalEvent);
           clearTimeout(this.timer);
-          console.log("dblclick", conn)
           console.log("dblclick", conn)
 
           _this.$confirm('确定删除所点击的线吗?', '提示', {
@@ -248,7 +253,6 @@ export default {
           }).then(() => {
             _this.jsPlumb.deleteConnection(conn)
           }).catch(() => {})
-          // this.$message.success("上个节点为" + conn.sourceId + ",下个节点为" + conn.targetId)
         })
         // 连线
         _this.jsPlumb.bind("connection", function (evt) {
@@ -261,9 +265,9 @@ export default {
               to: to,
               label: '连线名称',
               id: _this.getUUID(),
-              Remark: ''
+              Remark: '',
             })
-          }
+          };
           setTimeout(function () {
             _this.editLine(evt.connection);
           }, 100);
@@ -280,6 +284,16 @@ export default {
           console.log('connectionMoved', evt)
           _this.changeLine(evt.originalSourceId, evt.originalTargetId)
         })
+
+        // 单击endpoint
+        // jsPlumb.bind("endpointClick", function (evt) {
+        //   console.log('endpointClick', evt)
+        // })
+        //
+        // // 双击endpoint
+        // jsPlumb.bind("endpointDblClick", function (evt) {
+        //   console.log('endpointDblClick', evt)
+        // })
 
         // contextmenu 右键
         _this.jsPlumb.bind("contextmenu", function (evt) {
@@ -317,7 +331,7 @@ export default {
     loadEasyFlow() {
 
       // 初始化节点
-      for (let i = 0; i < this.data.nodeList.length; i++) {
+      for (var i = 0; i < this.data.nodeList.length; i++) {
         let node = this.data.nodeList[i]
         // 设置源点，可以拖出线连接其他节点
         this.jsPlumb.makeSource(node.id, this.jsplumbSourceOptions)
@@ -338,6 +352,8 @@ export default {
       }
 
       // 初始化连线
+      debugger
+      console.log('this.data.lineList',this.data.lineList);
       for (var i = 0; i < this.data.lineList.length; i++) {
         let line = this.data.lineList[i]
         let connection = this.jsPlumb.connect({
@@ -351,37 +367,41 @@ export default {
         this.loadEasyFlowFinish = true
       })
     },
-    drag(item) {
-      console.log('item', item);
-      this.currentItem = item;
+    // 添加新的节点
+    addNode(temp) {
+      console.log('添加节点', temp)
+      this.data.nodeList.push(temp);
+      this.$nextTick(function () {
+        this.jsPlumb.makeSource(temp.id, this.jsplumbSourceOptions)
+        this.jsPlumb.makeTarget(temp.id, this.jsplumbTargetOptions)
+        this.jsPlumb.draggable(temp.id, {
+          containment: 'parent'
+        })
+
+      })
     },
-    drop() {
-      var _obj = this.$refs.flowContent;
-      console.log(_obj);
-      var temp = {
-        id: this.getUUID(),
-        label: this.currentItem.name,
-        top: event.offsetY + 'px',
-        left: event.offsetX + 'px',
-        type: this.currentItem.type,
-        nodeType: this.currentItem.nodeType
+    // 删除线
+    deleteLine(from, to) {
+      this.data.lineList = this.data.lineList.filter(function (line) {
+        return line.from !== from && line.to !== to
+      })
+    },
+    // 改变连线
+    changeLine(oldFrom, oldTo) {
+      this.deleteLine(oldFrom, oldTo)
+    },
+    // 改变节点的位置
+    changeNodeSite(data) {
+      for (var i = 0; i < this.data.nodeList.length; i++) {
+        let node = this.data.nodeList[i]
+        if (node.id === data.nodeId) {
+          node.left = data.left
+          node.top = data.top
+        }
       }
-      this.addNode(temp);
-      // this.editNode(temp.id);
     },
-    allowDrop(event) {
-      event.preventDefault()
-    },
-    //获取checkbox选中值开票
-    changeFunOpen(val) {
-      this.fromAdd.userList = []
-      for (var i in val) {
-        this.fromAdd.userList.push(val[i].userId)
-      }
-      console.log("333", this.fromAdd.userList)
-    },
+    //删除节点
     deleteNode(nodeId) {
-      // console.log('nodeId',nodeId);
       this.$confirm('确定要删除节点' + nodeId + '?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -407,62 +427,74 @@ export default {
       }).catch(() => {})
       return true
     },
-    // 改变节点的位置
-    changeNodeSiteData(data) {
-      debugger
-      console.log('changeData', data);
-      for (var i = 0; i < this.data.nodeList.length; i++) {
-        let node = this.data.nodeList[i]
-        if (node.id === data.nodeId) {
-          node.left = data.left
-          node.top = data.top
-        }
-      }
-    },
     //编辑节点
     editNode(nodeId) {
-      console.log('编辑节点', nodeId)
+      //console.log('编辑节点', nodeId)
       this.editType = 'node';
-      let obj = {
-        nodeId: nodeId
-      }
-      this.editNodeData = Object.assign({}, obj, this.data)
-      console.log(this.editNodeData);
+      this.$nextTick(function () {
+        this.$refs.nodeForm.init(this.data, nodeId)
+      })
     },
     editLine(conn) {
-      console.log('conn', conn);
       var _this = this;
-      let obj = {};
       _this.currentConnect = conn;
-      _this.data.lineList.forEach(function (item) {
+      _this.data.lineList.forEach(function (item, index) {
         if (item.from == conn.sourceId && item.to == conn.targetId) {
           _this.currentLine = item;
           _this.editType = 'line';
-          console.log('aa', _this.currentLine);
-          obj = _this.currentLine;
-          // this.lineData = Object.assign({}, _this.currentConnect)
-          /* _this.$nextTick(function () {
+          _this.$nextTick(function () {
             _this.$refs.lineForm.init(item)
-          }) */
+          })
+          return;
         }
-        return
       });
-      console.log('arr', obj);
-      this.lineData = Object.assign({}, obj)
-
     },
-    // 添加新的节点
-    addNode(temp) {
-      console.log('添加节点', temp)
-      this.data.nodeList.push(temp);
-      this.$nextTick(function () {
-        this.jsPlumb.makeSource(temp.id, this.jsplumbSourceOptions)
-        this.jsPlumb.makeTarget(temp.id, this.jsplumbTargetOptions)
-        this.jsPlumb.draggable(temp.id, {
-          containment: 'parent'
-        })
-
-      })
+    //删除线
+    delLine(conn) {
+      this.$confirm('确定删除所点击的线吗?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.jsPlumb.deleteConnection(conn)
+      }).catch(() => {})
+    },
+    // 是否具有该线
+    hasLine(from, to) {
+      for (var i = 0; i < this.data.lineList.length; i++) {
+        var line = this.data.lineList[i]
+        if (line.from === from && line.to === to) {
+          return true
+        }
+      }
+      return false
+    },
+    // 是否含有相反的线
+    hashOppositeLine(from, to) {
+      return this.hasLine(to, from)
+    },
+    lineLabelSave(line) {
+      this.currentConnect.getOverlay("label-1").setLabel(line.label);
+      //this.$set(this.currentLine, 'label', line.label);
+    },
+    drag(item) {
+      this.currentItem = item;
+    },
+    drop(event) {
+      //event.preventDefault();
+      var _obj = this.$refs.flowContent;
+      var temp = {
+        id: this.getUUID(),
+        label: this.currentItem.name,
+        top: event.offsetY + 'px',
+        left: event.offsetX + 'px',
+        Type: this.currentItem.type
+      }
+      this.addNode(temp);
+      this.editNode(temp.id);
+    },
+    allowDrop(event) {
+      event.preventDefault()
     },
     getUUID() {
       var s = [];
@@ -476,63 +508,117 @@ export default {
       var uuid = s.join("");
       return uuid;
     },
+    saveData() {
+      //console.log(this.jsPlumb)
+      //console.log(this.jsPlumb.Defaults)
+      //console.log('线', this.jsPlumb.getConnections())
+      this.axios.post('/nodeLis', this.data.nodeList).then(res => {
+
+      })
+      this.axios.post('/listList', this.data.lineList).then(res => {
+
+      })
+    },
     editFlow() {
-      // debugger
-      console.log('aa');
       this.editType = 'flow';
-      /* this.editType = 'flow';
       this.$nextTick(function () {
         this.$refs.flowEdit.init(this.data.flowInfo);
-      }) */
-      // console.log(nodeId);
-
-    },
-    lineLabelSave(line) {
-      // this.currentConnect.getOverlay("label-1").setLabel(line.label);
-      this.$set(this.currentLine, 'label-1', line.label);
-      // console.log(this.data.lineList);
-    },
-    saveData() {
-      console.log(this.data.nodeList);
-      console.log(this.data.lineList);
-      this.axios.post('/node', this.data.nodeList)
-      this.axios.post('/line', this.data.lineList)
+      })
     }
   }
 }
 </script>
 
-<style lang="scss" scoped>
-.drop-field {
-  width: 300px;
-  height: 300px;
-  border: 1px solid #ccc;
+<style>
+.appcontainer {
+  display: flex;
+  height: calc(100vh - 20px);
+  color: #606266;
 }
 
-.flow-menu {
-  .menu-item {
-    margin-bottom: 30px;
-  }
+.flow-detail {
+  flex: 1;
+  border: 1px solid #EBEEF5;
+  padding: 12px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, .1);
+  word-break: break-all;
+  border-radius: 4px;
+  position: relative;
 }
 
 #flowContent {
   width: 100%;
-  height: 100vh;
+  height: 100%;
   position: relative;
 }
 
-.el-select {
-  width: 100%;
+.item {
+  position: absolute;
+  width: 60px;
+  height: 90px;
+  border: 1px solid #007AFF;
 }
 
 .flow-menu {
-  text-align: center;
-  height: 100vh;
-  border-right: 1px solid #ccc;
+  width: 100px;
+  padding: 10px;
+  margin: 0 10px;
+  border: 1px solid #EBEEF5;
+  padding: 12px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, .1);
+  word-break: break-all;
+  border-radius: 4px;
 }
 
-.iconfont {
-  font-size: 40px;
+.menu-item {
+  text-align: center;
+  box-shadow: 0 0 4px #696969;
+  margin-bottom: 8px;
   cursor: pointer;
+  font-size: 14px;
+  color: #606266;
+  padding: 5px 0;
+  border-radius: 5px;
+}
+
+.menu-item>i {
+  font-size: 30px;
+}
+
+.flow-edit {
+  width: 300px;
+  padding: 0 10px;
+}
+
+.flow-edit-content {
+  background: #FFF;
+  color: #606266;
+  line-height: 1.4;
+  text-align: justify;
+  font-size: 14px;
+  border: 1px solid #EBEEF5;
+  padding: 12px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, .1);
+  word-break: break-all;
+  border-radius: 4px;
+}
+
+.csslabel {
+  color: #434343;
+  font-weight: 400;
+  z-index: 10;
+  font-size: 12px;
+  color: #409eff;
+  background: #fff;
+}
+
+.csslabel .label-text {
+  background-color: white;
+}
+
+.savebtn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
 }
 </style>
